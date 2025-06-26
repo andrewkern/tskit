@@ -2311,6 +2311,16 @@ class TestGeneticRelatedness(StatsTestCase, TwoWaySampleSetStatsMixin):
 class TestBranchGeneticRelatedness(TestGeneticRelatedness, TopologyExamplesMixin):
     mode = "branch"
 
+    def test_single_sample_set_self_comparison(self):
+        # Test for issue #3055 - self-comparisons with single sample set
+        ts = msprime.simulate(sample_size=10, Ne=10000, length=1000, random_seed=42)
+        # Single sample set with self-comparison
+        result = ts.genetic_relatedness([[0]], indexes=[(0, 0)], mode="branch")
+        assert result.shape == (1,)
+        # Should work for multiple samples in single set too
+        result = ts.genetic_relatedness([[0, 1, 2]], indexes=[(0, 0)], mode="branch")
+        assert result.shape == (1,)
+
     @pytest.mark.parametrize("polarised", [True, False])
     def test_simple_tree_noncentred(self, polarised):
         # 2.00┊   4   ┊
@@ -2365,9 +2375,34 @@ class TestBranchGeneticRelatedness(TestGeneticRelatedness, TopologyExamplesMixin
 class TestNodeGeneticRelatedness(TestGeneticRelatedness, TopologyExamplesMixin):
     mode = "node"
 
+    def test_single_sample_set_self_comparison(self, ts_12_highrecomb_fixture):
+        # Test for issue #3055 - self-comparisons with single sample set
+        ts = ts_12_highrecomb_fixture
+        # Single sample set with self-comparison
+        result = ts.genetic_relatedness([[0]], indexes=[(0, 0)], mode="node")
+        assert result.shape == (ts.num_nodes, 1)
+        # Should work for multiple samples in single set too
+        result = ts.genetic_relatedness([[0, 1, 2]], indexes=[(0, 0)], mode="node")
+        assert result.shape == (ts.num_nodes, 1)
+
 
 class TestSiteGeneticRelatedness(TestGeneticRelatedness, MutatedTopologyExamplesMixin):
     mode = "site"
+
+    def test_single_sample_set_self_comparison(self, ts_12_highrecomb_fixture):
+        # Test for issue #3055 - self-comparisons with single sample set
+        ts = ts_12_highrecomb_fixture
+        # Single sample set with self-comparison
+        result = ts.genetic_relatedness([[0]], indexes=[(0, 0)], mode="site")
+        assert result.shape == (1,)
+        # Should work for multiple samples in single set too
+        result = ts.genetic_relatedness([[0, 1, 2]], indexes=[(0, 0)], mode="site")
+        assert result.shape == (1,)
+        # Test with multiple self-comparisons
+        result = ts.genetic_relatedness(
+            [[0], [1]], indexes=[(0, 0), (1, 1)], mode="site"
+        )
+        assert result.shape == (2,)
 
     def test_match_K_c0(self):
         # This test checks that ts.genetic_relatedness() matches K_c0
