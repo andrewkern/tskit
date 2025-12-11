@@ -2,6 +2,60 @@ setup: |
   import tskit
 
 benchmarks:
+  # Simplify benchmarks: 1000 samples -> 10 samples
+  # different recombination scenarios
+  - name: simplify_low_recomb
+    code: ts.simplify(samples)
+    setup: |
+      import msprime
+      ts = msprime.sim_ancestry(
+          samples=1000,
+          population_size=10000,
+          sequence_length=1_000_000,
+          recombination_rate=1e-9,  # Low recombination
+          random_seed=42
+      )
+      samples = list(range(10))
+
+  - name: simplify_medium_recomb
+    code: ts.simplify(samples)
+    setup: |
+      import msprime
+      ts = msprime.sim_ancestry(
+          samples=1000,
+          population_size=10000,
+          sequence_length=1_000_000,
+          recombination_rate=1e-8,  # Medium recombination
+          random_seed=42
+      )
+      samples = list(range(10))
+
+  - name: simplify_high_recomb
+    code: ts.simplify(samples)
+    setup: |
+      import msprime
+      ts = msprime.sim_ancestry(
+          samples=1000,
+          population_size=10000,
+          sequence_length=1_000_000,
+          recombination_rate=1e-7,  # High recombination
+          random_seed=42
+      )
+      samples = list(range(10))
+
+  - name: simplify_large_scale
+    code: ts.simplify(samples)
+    setup: |
+      import msprime
+      ts = msprime.sim_ancestry(
+          samples=10000,
+          population_size=10000,
+          sequence_length=50_000_000,
+          recombination_rate=1e-8,  # ~800K edges, ~200K trees
+          random_seed=42
+      )
+      samples = list(range(10))
+
   - code: ts = tskit.load("{filename}")
     parameters:
       filename: &files
