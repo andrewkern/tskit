@@ -7577,6 +7577,28 @@ cmp_segment(const void *a, const void *b)
     return ret;
 }
 
+/* Inline comparison macro to avoid function call overhead */
+#define SEGMENT_LESS_THAN(a, b)                                                     \
+    (((a)->left < (b)->left) || (((a)->left == (b)->left) && ((a)->node < (b)->node)))
+
+/* Insertion sort for segment arrays - faster than qsort due to lower overhead
+ * and typical near-sorted input from edge processing order. */
+static void
+insertion_sort_segments(tsk_segment_t *segments, tsk_size_t n)
+{
+    tsk_size_t i, j;
+    tsk_segment_t key;
+    for (i = 1; i < n; i++) {
+        key = segments[i];
+        j = i;
+        while (j > 0 && SEGMENT_LESS_THAN(&key, &segments[j - 1])) {
+            segments[j] = segments[j - 1];
+            j--;
+        }
+        segments[j] = key;
+    }
+}
+
 static int TSK_WARN_UNUSED
 segment_overlapper_alloc(segment_overlapper_t *self)
 {
@@ -7629,8 +7651,7 @@ segment_overlapper_start(
     self->right = DBL_MAX;
 
     /* Sort the segments in the buffer by left coordinate */
-    qsort(
-        self->segments, (size_t) self->num_segments, sizeof(tsk_segment_t), cmp_segment);
+    insertion_sort_segments(self->segments, self->num_segments);
     /* NOTE! We are assuming that there's space for another element on the end
      * here. This is to insert a sentinel which simplifies the logic. */
     sentinel = self->segments + self->num_segments;
