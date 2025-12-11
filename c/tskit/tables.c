@@ -7564,19 +7564,6 @@ typedef struct {
     int64_t edge_sort_offset;
 } simplifier_t;
 
-static int
-cmp_segment(const void *a, const void *b)
-{
-    const tsk_segment_t *ia = (const tsk_segment_t *) a;
-    const tsk_segment_t *ib = (const tsk_segment_t *) b;
-    int ret = (ia->left > ib->left) - (ia->left < ib->left);
-    /* Break ties using the node */
-    if (ret == 0) {
-        ret = (ia->node > ib->node) - (ia->node < ib->node);
-    }
-    return ret;
-}
-
 /* Inline comparison macro to avoid function call overhead */
 #define SEGMENT_LESS_THAN(a, b)                                                     \
     (((a)->left < (b)->left) || (((a)->left == (b)->left) && ((a)->node < (b)->node)))
