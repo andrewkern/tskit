@@ -97,6 +97,12 @@ if not meson.is_subproject()
         dependencies: kastore_dep)
     test('minimal_cpp', test_minimal_cpp)
 
+    # Test for internal static functions - includes tables.c directly
+    test_sort_internal = executable('test_sort_internal',
+        sources: ['tests/test_sort_internal.c'],
+        link_with: [test_lib], c_args: extra_c_args, dependencies: [kastore_dep, m_dep])
+    test('sort_internal', test_sort_internal)
+
     if get_option('build_examples')
       # These example programs use less portable features,
       # and we don't want to always compile them. Use, e.g.,
