@@ -7564,27 +7564,36 @@ typedef struct {
     int64_t edge_sort_offset;
 } simplifier_t;
 
-/* Inline comparison macro to avoid function call overhead */
-#define SEGMENT_LESS_THAN(a, b)                                                     \
-    (((a)->left < (b)->left) || (((a)->left == (b)->left) && ((a)->node < (b)->node)))
-
-/* Insertion sort for segment arrays - faster than qsort due to lower overhead
- * and typical near-sorted input from edge processing order. */
-static void
-insertion_sort_segments(tsk_segment_t *segments, tsk_size_t n)
-{
-    tsk_size_t i, j;
-    tsk_segment_t key;
-    for (i = 1; i < n; i++) {
-        key = segments[i];
-        j = i;
-        while (j > 0 && SEGMENT_LESS_THAN(&key, &segments[j - 1])) {
-            segments[j] = segments[j - 1];
-            j--;
-        }
-        segments[j] = key;
-    }
+/*
+ * Macro to generate type-specific insertion sort functions with inlined comparisons.
+ * This avoids qsort overhead for small arrays common in simplify operations.
+ */
+#define DEFINE_INSERTION_SORT(name, type, less_than)                                \
+static void                                                                         \
+name(type *arr, tsk_size_t n)                                                       \
+{                                                                                   \
+    tsk_size_t i, j;                                                                \
+    type key;                                                                       \
+    for (i = 1; i < n; i++) {                                                       \
+        key = arr[i];                                                               \
+        j = i;                                                                      \
+        while (j > 0 && less_than(key, arr[j - 1])) {                               \
+            arr[j] = arr[j - 1];                                                    \
+            j--;                                                                    \
+        }                                                                           \
+        arr[j] = key;                                                               \
+    }                                                                               \
 }
+
+/* Segment comparison: by left coordinate, then by node */
+#define SEGMENT_LESS_THAN(a, b)                                                     \
+    ((a).left < (b).left || ((a).left == (b).left && (a).node < (b).node))
+
+/* Node ID comparison: simple integer comparison */
+#define NODE_ID_LESS_THAN(a, b) ((a) < (b))
+
+DEFINE_INSERTION_SORT(insertion_sort_segments, tsk_segment_t, SEGMENT_LESS_THAN)
+DEFINE_INSERTION_SORT(insertion_sort_node_ids, tsk_id_t, NODE_ID_LESS_THAN)
 
 static int TSK_WARN_UNUSED
 segment_overlapper_alloc(segment_overlapper_t *self)
@@ -9218,8 +9227,7 @@ simplifier_flush_edges(simplifier_t *self, tsk_id_t parent, tsk_size_t *ret_num_
     interval_list_t *x;
     tsk_size_t num_edges = 0;
 
-    qsort(self->buffered_children, (size_t) self->num_buffered_children,
-        sizeof(tsk_id_t), cmp_node_id);
+    insertion_sort_node_ids(self->buffered_children, self->num_buffered_children);
     for (j = 0; j < self->num_buffered_children; j++) {
         child = self->buffered_children[j];
         for (x = self->child_edge_map_head[child]; x != NULL; x = x->next) {
